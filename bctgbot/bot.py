@@ -2,12 +2,22 @@
 import telebot
 from telebot import types
 import os
+import bctgbot.api as api
 from dotenv import load_dotenv
 
 load_dotenv()
 
 bot = telebot.TeleBot(os.getenv("TG_BOT_TOKEN"))
 
+def get_args(text) -> list[str]:
+    els = text.split(" ")[1:]
+    elsf = []
+    for el in els:
+        if el == "":
+            continue
+        else:
+            elsf.append(el)
+    return elsf
 
 def gen_ru_translation_markup():
     markup = types.InlineKeyboardMarkup()
@@ -40,6 +50,24 @@ def rus_menu(call):
                  "Чтобы майнить токены себе или кому-то другому, вы должны установить приложение для ПК с открытым "
                  "исходным кодом\n"
                  "https://github.com/BlockMaster777/BlockCoin", parse_mode="Markdown", disable_web_page_preview=True)
-    
+
+
+@bot.message_handler(commands=['verify'])
+def verify(message):
+    args = get_args(message.text)
+    if len(args) < 1:
+        bot.reply_to(message, "Send at least 1 token / Отправьте как минимум один токен")
+        return
+    wrong = []
+    right_count = 0
+    for res in api.verify_tokens(args):
+        if res["result"]:
+            right_count += 1
+        else:
+            wrong.append(res)
+    wrong_msg_part = ""
+    for res in wrong:
+        wrong_msg_part += f"⚠️ {res["token"]} - {res["err"]}\n"
+    bot.reply_to(message, f"✅ {right_count}, ❌ {len(wrong)}\n\n" + wrong_msg_part)
 
 bot.infinity_polling(timeout=60)

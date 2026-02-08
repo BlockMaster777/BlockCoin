@@ -1,5 +1,6 @@
 # coding=utf-8
 import hashlib
+from typing import Any, Generator
 from bctgbot.protocol_config import *
 from bctgbot.db_manager import DatabaseManager
 
@@ -45,6 +46,12 @@ def verify_token(token: str)-> tuple[bool,  str]:
     if not parts[3].startswith(GOAL_HASH_PREFIX):
         return False, "No goal hash prefix"
     return True,  ""
+
+
+def verify_tokens(tokens: list) -> Generator[dict[str, str | bool], Any, None]:
+    for token in tokens:
+        vdata =  verify_token(token)
+        yield {"result": vdata[0], "token": str(token), "err": vdata[1]}
 
 
 def save_token(token):
