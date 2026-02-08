@@ -26,10 +26,10 @@ class DatabaseManager:
                           id INTEGER PRIMARY KEY AUTOINCREMENT,
                           version TEXT NOT NULL,
                           owner TEXT NOT NULL,
-                          randdata INTEGER NOT NULL,
+                          randdata TEXT NOT NULL,
                           hash TEXT NOT NULL)""")
     
-    def insert_token(self, version: str, owner: str, randdata: int, token_hash: str) -> None:
+    def insert_token(self, version: str, owner: str, randdata: str, token_hash: str) -> None:
         if self.__select("SELECT * FROM tokens WHERE version = ? AND owner = ? AND randdata = ?",
                          (version ,owner, randdata)):
             raise TokenExistsException(f"Token with version '{version}' owner '{owner}' and randdata '{randdata}' "
