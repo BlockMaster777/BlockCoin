@@ -1,0 +1,55 @@
+# coding=utf-8
+import hashlib
+from bctgbot.protocol_config import *
+from bctgbot.db_manager import DatabaseManager
+
+
+class InvalidTokenException(Exception):
+    pass
+
+
+def hash_data(data: str) -> str:
+    """Hash the input data using SHA-256 and return the hexadecimal representation."""
+    sha256_hash = hashlib.sha256()
+    sha256_hash.update(data.encode())
+    sha256_hash.update(sha256_hash.hexdigest().encode())
+    sha256_hash.update(bytes(SALT.encode()))
+    return sha256_hash.hexdigest()
+
+
+def verify_hash(data: str, expected_hash: str) -> bool:
+    """Verify that the hash of the input data matches the expected hash."""
+    return hash_data(data) == expected_hash
+
+
+def gen_data_for_hash(version: str, owner: str, randdata: str,  *_) -> str:
+    return f"{version}{PART_DIVIDER}{owner}{PART_DIVIDER}{randdata}"
+
+
+def split_token(token_string: str) -> tuple:
+    parts = token_string.split(PART_DIVIDER)
+    if len(parts) != 4:
+        raise InvalidTokenException("Invalid token format")
+    return parts[0], parts[1], parts[2], parts[3]
+
+
+def verify_token(token: str)-> tuple[bool,  str]:
+    try:
+        parts = split_token(token)
+    except InvalidTokenException:
+        return False, "Invalid token structure"
+    if parts[0] != "2.0":
+        return False, "Unknown protocol version"
+    if not verify_hash(gen_data_for_hash(*parts), parts[3]):
+        return False, "Wrong hash"
+    if not parts[3].startswith(GOAL_HASH_PREFIX):
+        return False, "No goal hash prefix"
+    return True,  ""
+
+
+def save_token(token):
+    res = verify_token(token)
+    if not res[0]:
+        raise InvalidTokenException(res[1])
+    dbm = DatabaseManager()
+    dbm.insert_token(*split_token(token))
