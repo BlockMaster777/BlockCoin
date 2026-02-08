@@ -24,15 +24,18 @@ class DatabaseManager:
     def create_tables(self) -> None:
         self.__execute("""CREATE TABLE IF NOT EXISTS tokens (
                           id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          version TEXT NOT NULL,
                           owner TEXT NOT NULL,
-                          number INTEGER NOT NULL,
+                          randdata INTEGER NOT NULL,
                           hash TEXT NOT NULL)""")
     
-    def insert_token(self, owner: str, number: int, token_hash: str) -> None:
-        if self.__select("SELECT * FROM tokens WHERE owner = ? AND number = ?", (owner, number)):
-            raise TokenExistsException(f"Token with owner '{owner}' and number '{number}' already exists.")
-        self.__execute("INSERT INTO tokens (owner, number, hash) VALUES (?, ?, ?)",
-                       (owner, number, token_hash))
+    def insert_token(self, version: str, owner: str, randdata: int, token_hash: str) -> None:
+        if self.__select("SELECT * FROM tokens WHERE version = ? AND owner = ? AND randdata = ?",
+                         (version ,owner, randdata)):
+            raise TokenExistsException(f"Token with version '{version}' owner '{owner}' and randdata '{randdata}' "
+                                       f"already exists.")
+        self.__execute("INSERT INTO tokens (version, owner, randdata, hash) VALUES (?, ?, ?, ?)",
+                       (version, owner, randdata, token_hash))
         
     def get_tokens(self) -> list[tuple]:
         return self.__select("SELECT * FROM tokens")

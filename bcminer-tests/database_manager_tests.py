@@ -28,8 +28,8 @@ def cursor(connection: sqlite3.Connection) -> sqlite3.Cursor:
 @pytest.fixture
 def prepared_db(db_manager: DatabaseManager, cursor: sqlite3.Cursor) -> None:
     db_manager.create_tables()
-    cursor.execute("INSERT INTO tokens (owner, number, hash) VALUES ('Alice', 1, 'hash1')")
-    cursor.execute("INSERT INTO tokens (owner, number, hash) VALUES ('Bob', 2, 'hash2')")
+    cursor.execute("INSERT INTO tokens (version, owner, randdata, hash) VALUES ('testversion', 'Alice', 1, 'hash1')")
+    cursor.execute("INSERT INTO tokens (version, owner, randdata, hash) VALUES ('testversion', 'Bob', 2, 'hash2')")
     connection = cursor.connection
     connection.commit()
 
@@ -40,26 +40,26 @@ def test_create_tables(db_manager: DatabaseManager, cursor: sqlite3.Cursor) -> N
 
 def test_get_tokens(prepared_db: None, db_manager: DatabaseManager) -> None:
     tokens = db_manager.get_tokens()
-    assert tokens == [(1, 'Alice', 1, 'hash1'), (2, 'Bob', 2, 'hash2')]
+    assert tokens == [(1, 'testversion', 'Alice', 1, 'hash1'), (2, 'testversion', 'Bob', 2, 'hash2')]
 
 def test_get_user_tokens(prepared_db: None, db_manager: DatabaseManager) -> None:
     alice_tokens = db_manager.get_user_tokens("Alice")
     bob_tokens = db_manager.get_user_tokens("Bob")
-    assert alice_tokens == [(1, 'Alice', 1, 'hash1')]
-    assert bob_tokens == [(2, 'Bob', 2, 'hash2')]
+    assert alice_tokens == [(1, 'testversion', 'Alice', 1, 'hash1')]
+    assert bob_tokens == [(2, 'testversion', 'Bob', 2, 'hash2')]
 
 def test_get_user_tokens_no_tokens(prepared_db: None, db_manager: DatabaseManager) -> None:
     charlie_tokens = db_manager.get_user_tokens("Charlie")
     assert charlie_tokens == []
 
 def test_insert_token(prepared_db: None, db_manager: DatabaseManager, cursor: sqlite3.Cursor) -> None:
-    db_manager.insert_token("Charlie", 3, "hash3")
+    db_manager.insert_token('testversion', "Charlie", 3, "hash3")
     cursor.execute("SELECT * FROM tokens")
     tokens = cursor.fetchall()
-    assert tokens == [(1, 'Alice', 1, 'hash1'), (2, 'Bob', 2, 'hash2'), (3, 'Charlie', 3, 'hash3')]
+    assert tokens == [(1, 'testversion', 'Alice', 1, 'hash1'), (2, 'testversion', 'Bob', 2, 'hash2'), (3, 'testversion', 'Charlie', 3, 'hash3')]
 
 def test_insert_existing_token(prepared_db: None, db_manager: DatabaseManager) -> None:
     with pytest.raises(TokenExistsException):
-        db_manager.insert_token("Alice", 1, "hash1")
+        db_manager.insert_token('testversion', "Alice", 1, "hash1")
     with pytest.raises(TokenExistsException):
-        db_manager.insert_token("Alice", 1, "hash88")
+        db_manager.insert_token('testversion', "Alice", 1, "hash88")
