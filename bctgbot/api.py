@@ -49,8 +49,11 @@ def verify_token(token: str)-> tuple[bool,  str]:
 
 
 def verify_tokens(tokens: list) -> Generator[dict[str, str | bool], Any, None]:
-    for token in tokens:
-        vdata =  verify_token(token)
+    for i, token in enumerate(tokens):
+        if token in tokens[:i]:
+            yield {"result": False, "token": str(token), "err": "Duplicate token"}
+            continue
+        vdata = verify_token(token)
         yield {"result": vdata[0], "token": str(token), "err": vdata[1]}
 
 
