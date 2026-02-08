@@ -45,6 +45,7 @@ def start_mining():
     if count <= 0:
         tk.messagebox.showerror("Error", "Count must be a positive integer")
         return
+    current_list.delete(0, tk.END)
     threading.Thread(target=mining_process, args=(count, owner), daemon=True).start()
 
 ttk.Label(app, text="Owner", font=("Arial", 14)).place(x=20, y=20)
