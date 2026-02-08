@@ -70,10 +70,12 @@ class Generator:
     def generate_valid_tokens(self, owner: str, count: int) -> list[Token]:
         """Generate a specified number of valid tokens for the given owner."""
         tokens = []
+        self.update_function(status="mining_started")
         for _ in range(count):
             token = self.generate_one_valid_token(owner)
             tokens.append(token)
-            self.update_function()
+            self.update_function(token=token, status="new_token")
+        self.update_function(status="mining_finished")
         return tokens
 
 
