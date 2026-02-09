@@ -4,7 +4,7 @@ import random
 from collections.abc import Callable
 
 from bcminer.protocol_config import *
-from bcminer.db_manager import DatabaseManager
+from bcminer.db_manager import DatabaseManager, TokenExistsException
 
 
 class InvalidTokenException(Exception):
@@ -19,7 +19,7 @@ class Token:
             self.token_hash = token_hash
         
         @classmethod
-        def from_token_string(cls, token_string: str) -> Token:
+        def from_string(cls, token_string: str) -> Token:
             parts = token_string.split(PART_DIVIDER)
             if len(parts) != 4:
                 raise InvalidTokenException("Invalid token format")
@@ -29,7 +29,7 @@ class Token:
             """Format the token as a string using the defined format."""
             return f"{self.version}{PART_DIVIDER}{self.owner}{PART_DIVIDER}{self.randdata}{PART_DIVIDER}{self.token_hash}"
         
-        def get_tuple(self) -> tuple:
+        def to_tuple(self) -> tuple:
             """Return the token data as a tuple."""
             return self.version, self.owner, self.randdata, self.token_hash
 
@@ -62,8 +62,8 @@ class Generator:
         while True:
             token = self.generate_token(owner)
             if token.token_hash.startswith(GOAL_HASH_PREFIX):
-                if not token.get_tuple() in self.valid_tokens:
-                    self.valid_tokens.add(token.get_tuple())
+                if not token.to_tuple() in self.valid_tokens:
+                    self.valid_tokens.add(token.to_tuple())
                     self.dbm.insert_token(token.version, token.owner, token.randdata, token.token_hash)
                 return token
     
@@ -102,7 +102,30 @@ def generate_random_data() -> str:
 def gen_data_for_hash(version: str, owner: str, randdata: str) -> str:
     return f"{version}{PART_DIVIDER}{owner}{PART_DIVIDER}{randdata}"
 
+def split_token(token_string: str) -> tuple:
+    parts = token_string.split(PART_DIVIDER)
+    if len(parts) != 4:
+        raise InvalidTokenException("Invalid token format")
+    return parts[0], parts[1], parts[2], parts[3]
 
-if __name__ == '__main__':
-    generator = Generator()
-    print(generator.generate_valid_tokens(owner="Alice", count=5))
+def verify_token(token: str)-> bool:
+    try:
+        parts = split_token(token)
+    except InvalidTokenException:
+        return False
+    if parts[0] != "2.0":
+        return False
+    if not verify_hash(gen_data_for_hash(*parts), parts[3]):
+        return False
+    if not parts[3].startswith(GOAL_HASH_PREFIX):
+        return False
+    return True
+
+def save_tokens_to_db(tokens: list[Token | None]) -> None:
+    """Save a list of tokens with no duplications to the database."""
+    dbm = DatabaseManager()
+    for token in tokens:
+        try:
+            dbm.insert_token(*token.to_tuple())
+        except TokenExistsException, AttributeError:
+            continue

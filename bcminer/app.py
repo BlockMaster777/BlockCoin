@@ -1,14 +1,14 @@
 # coding=utf-8
 import threading
 import tkinter as tk
-from tkinter import ttk, messagebox
-from bcminer.api import Generator, Token, remove_id_from_token_tuple
+from tkinter import ttk, messagebox, filedialog
+from bcminer.api import Generator, InvalidTokenException, Token, remove_id_from_token_tuple, save_tokens_to_db
 from bcminer import db_manager
 
 
 app = tk.Tk()
 app.title("BlockCoinMiner")
-app.configure(width=700, height=500)
+app.configure(width=700, height=550)
 app.resizable(width=False, height=False)
 app.iconbitmap("icon.ico")
 
@@ -48,6 +48,34 @@ def start_mining():
     current_list.delete(0, tk.END)
     threading.Thread(target=mining_process, args=(count, owner), daemon=True).start()
 
+def export_all_tokens_to_file():
+    tokens = all_list.get(0, tk.END)
+    with (filedialog.asksaveasfile(defaultextension=".txt", filetypes=[("txt", "TXT")], title="Export tokens")
+          as f):
+        if f:
+            f.write(" ".join(tokens))
+
+def import_all_tokens_from_file():
+    with (filedialog.askopenfile(defaultextension=".txt", filetypes=[("txt", "TXT")], title="Import tokens")
+          as f):
+        if f:
+            def try_from_string(tok_string):
+                try:
+                    return Token.from_string(tok_string)
+                except InvalidTokenException:
+                    return None
+            tokens = [try_from_string(tok_string) for tok_string in f.read().split()]
+            save_tokens_to_db(tokens)
+            all_list.delete(0, tk.END)
+            all_list.insert(tk.END, *[str(Token(*remove_id_from_token_tuple(tok_tuple)))
+                                      for tok_tuple in dbm.get_tokens()])
+
+def clear_all_tokens():
+    if tk.messagebox.askyesno("Confirm", "Are you sure you want to clear all tokens? This action cannot be undone."):
+        dbm.clear_tokens()
+        all_list.delete(0, tk.END)
+
+
 ttk.Label(app, text="Owner", font=("Arial", 14)).place(x=20, y=20)
 owner_var = tk.StringVar(app)
 ttk.Entry(app, font=("Arial", 14), width=30, textvariable=owner_var).place(x=20, y=55)
@@ -69,4 +97,14 @@ all_list = tk.Listbox(app, font=("Arial", 7), width=60, height=32)
 all_list.place(x=380, y=64)
 all_list.insert(tk.END, *[str(Token(*remove_id_from_token_tuple(tok_tuple)))
                           for tok_tuple in dbm.get_tokens()])
+
+ttk.Button(app, text="Copy current tokens", command=lambda: app.clipboard_append(" ".join(
+        current_list.get(0, tk.END)))).place(x=20, y=500)
+
+ttk.Button(app, text="Export all tokens", command=export_all_tokens_to_file).place(x=220, y=500)
+
+ttk.Button(app, text="Import all tokens", command=import_all_tokens_from_file).place(x=380, y=500)
+
+ttk.Button(app, text="Clear all tokens", command=clear_all_tokens).place(x=540, y=500)
+
 app.mainloop()

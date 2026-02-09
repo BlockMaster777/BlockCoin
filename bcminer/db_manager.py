@@ -42,3 +42,6 @@ class DatabaseManager:
     
     def get_user_tokens(self, owner: str) -> list[tuple]:
         return self.__select("SELECT * FROM tokens WHERE owner = ?", (owner,))
+    
+    def clear_tokens(self) -> None:
+        self.__execute("DELETE FROM tokens")
