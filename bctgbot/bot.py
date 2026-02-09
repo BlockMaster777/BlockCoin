@@ -70,7 +70,36 @@ def verify(message):
             wrong.append(res)
     wrong_msg_part = ""
     for res in wrong:
-        wrong_msg_part += f"⚠️ {res["token"]} - {res["err"]}\n"
-    bot.reply_to(message, f"✅ {right_count}, ❌ {len(wrong)}\n\n" + wrong_msg_part)
+        wrong_msg_part += f"⛔ {res["token"]} - {res["err"]}\n"
+    bot.reply_to(message, f"VERIFYING RESULTS\n✅ {right_count}, ⛔ {len(wrong)}\n\n" + wrong_msg_part)
+
+@bot.message_handler(content_types=['document'])
+def handle_file(message):
+    print("file")
+    if message.document.mime_type != "text/plain":
+        bot.reply_to(message, "Only text files are supported / Поддерживаются только текстовые файлы")
+        return
+    if message.document.file_name != "tokens.txt":
+        return
+    file_info = bot.get_file(message.document.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    content = downloaded_file.decode()
+    args = content.split(" ")
+    if len(args) < 1:
+        bot.reply_to(message, "Send at least 1 token / Отправьте как минимум один токен")
+        return
+    wrong = []
+    right_count = 0
+    for res in api.verify_tokens(args):
+        if res["result"]:
+            right_count += 1
+        else:
+            wrong.append(res)
+    wrong_msg_part = ""
+    for res in wrong:
+        wrong_msg_part += f"⛔ {res["token"]} - {res["err"]}\n"
+    bot.reply_to(message, f"VERIFYING RESULTS\n✅ {right_count}, ⛔ {len(wrong)}\n\n" + (wrong_msg_part if
+                                len(wrong_msg_part) <  4096 else "Too many wrong "
+                                "tokens to display / Слишком много неправильных токенов для отображения"))
 
 bot.infinity_polling(timeout=60)
