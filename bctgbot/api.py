@@ -74,3 +74,9 @@ def save_tokens(tokens: list) -> int:
             wrong_count += 1
             continue
     return wrong_count
+
+
+def get_users_tokens(username) -> list:
+    dbm = DatabaseManager()
+    data = dbm.get_user_tokens(username)
+    return [token[1] + PART_DIVIDER + token[2] + PART_DIVIDER + token[3] + PART_DIVIDER + token[4] for token in data]

@@ -38,7 +38,7 @@ def start_message(message):
                  "/info \\- information about this bot\n"
                  "/verify \\<token or tokens, split with spaces\\> \\- verify tokens\n"
                  "/save \\<token or tokens, split with spaces\\> \\- save tokens to the bot\n"
-                 "~/mytokens \\- see your tokens~\n"
+                 "/mytokens \\- see your tokens\n"
                  "~/top \\- top 20 richest~\n"
                  "~/usertokens \\<username\\> \\- see users tokens~\n\n"
                  "Send file v\\_tokens\\.txt which was exported from the app, to verify tokens in it\n"
@@ -55,7 +55,7 @@ def rus_menu(call):
                  "/info \\- информация о проекте\n"
                  "/verify \\<токен\\(\\-ы\\), разделять пробелами\\> \\- проверить токены\n"
                  "/save \\<токен\\(\\-ы\\), разделять пробелами\\> \\- сохранить токены в боте\n"
-                 "~/mytokens \\- посмотреть ваши токены~\n"
+                 "/mytokens \\- посмотреть ваши токены\n"
                  "~/top \\- топ 20 самых богатых~\n"
                  "~/usertokens \\<имя пользователя\\> \\- посмотреть токены пользователя~\n\n"
                  "Отправьте файл v\\_tokens\\.txt, который был экспортирован из приложения, для проверки токенов "
@@ -194,6 +194,18 @@ def handle_s_tokens_file(message):
     content = downloaded_file.decode()
     args = content.split(" ")
     do_saving(message, args)
+
+
+@bot.message_handler(commands=['mytokens'])
+def my_tokens(message):
+    tokens = api.get_users_tokens(message.from_user.username)
+    data_str = " ".join(tokens)
+    file_with_results = bytes(data_str, "utf-8")
+    bot.send_document(message.chat.id, file_with_results,
+                      caption=f"{len(tokens)} tokens of "
+                              f"{message.from_user.username} / "
+                              f"{len(tokens)} токенов {message.from_user.username}",
+                      visible_file_name="your_tokens.txt")
 
 
 if __name__ == '__main__':
