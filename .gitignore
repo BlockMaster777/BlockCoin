@@ -167,3 +167,4 @@ test.db
 bcminer/blockcoinminer.db
 
 /bcminer/tokens.txt
+/bctgbot/blockcoinbot.db

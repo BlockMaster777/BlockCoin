@@ -2,7 +2,7 @@
 import hashlib
 from typing import Any, Generator
 from bctgbot.protocol_config import *
-from bctgbot.db_manager import DatabaseManager
+from bctgbot.db_manager import DatabaseManager, TokenExistsException
 
 
 class InvalidTokenException(Exception):
@@ -63,3 +63,14 @@ def save_token(token):
         raise InvalidTokenException(res[1])
     dbm = DatabaseManager()
     dbm.insert_token(*split_token(token))
+
+
+def save_tokens(tokens: list) -> int:
+    wrong_count = 0
+    for token in tokens:
+        try:
+            save_token(token)
+        except InvalidTokenException, TokenExistsException:
+            wrong_count += 1
+            continue
+    return wrong_count
