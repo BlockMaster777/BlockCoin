@@ -44,3 +44,10 @@ class DatabaseManager:
     
     def get_user_tokens(self, owner: str) -> list[tuple]:
         return self.__select("SELECT * FROM tokens WHERE owner = ?", (owner,))
+    
+    def get_top(self)-> list[tuple]:
+        return self.__select("SELECT owner, COUNT(*) as token_count "
+                             "FROM tokens "
+                             "GROUP BY owner "
+                             "ORDER BY token_count DESC "
+                             "LIMIT 20")
